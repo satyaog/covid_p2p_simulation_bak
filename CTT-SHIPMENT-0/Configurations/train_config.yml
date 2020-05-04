@@ -1,0 +1,74 @@
+data:
+  loader_kwargs:
+    batch_size: 64
+    clip_history_days: false
+    num_workers: 8
+    preload: true
+    relative_days: true
+    shuffle: true
+  paths:
+    train:
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-0_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-1_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-2_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-3_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-4_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-5_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-6_20200430-012202-output.zip
+    validate:
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-7_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-8_20200430-012202-output.zip
+    - ./data/1k_app_0.5/sim_v2_people-1000_days-60_init-0.01_seed-9_20200430-012202-output.zip
+git_rev: 3cc724a54be4857db8fa0b15274bd42cf9354b75
+losses:
+  kwargs:
+    contagion:
+      allow_multiple_exposures: true
+    infectiousness: {}
+  weights:
+    contagion: 1.0
+    infectiousness: 1.0
+model:
+  kwargs:
+    capacity: 256
+    dropout: 0.3667537547900545
+    encounter_duration_embedding_dim: 64
+    encounter_duration_embedding_mode: sines
+    encounter_duration_num_thermo_bins: 32
+    encounter_duration_thermo_range:
+    - 0.0
+    - 6.0
+    encounter_output_features: 1
+    encounter_partner_id_embedding_dim: 32
+    health_history_embedding_dim: 64
+    health_profile_embedding_dim: 192
+    latent_variable_output_features: 1
+    message_dim: 8
+    message_embedding_dim: 128
+    num_encounter_partner_id_bits: 16
+    num_heads: 4
+    num_health_history_features: 29
+    num_health_profile_features: 12
+    num_sabs: 2
+    sab_capacity: 64
+    time_embedding_dim: 32
+    use_encounter_partner_id_embedding: false
+    use_learned_time_embedding: true
+optim:
+  kwargs:
+    eta_max: 0.0008
+    eta_min: 8.0e-06
+    num_steps: 100000
+    num_warmup_steps: 5000
+    weight_decay: 4.7783275489889845e-05
+  name: WarmCosineAdam
+tensorboard:
+  log_scalars_every: 10
+training:
+  checkpoint:
+    every: 5
+    if_best: true
+  num_epochs: 40
+wandb:
+  log_every: 50
+  use: true
