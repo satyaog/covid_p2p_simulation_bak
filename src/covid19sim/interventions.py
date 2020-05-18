@@ -9,6 +9,7 @@ from covid19sim.configs.config import RHO, GAMMA, MANUAL_TRACING_P_CONTACT,\
     RISK_TRANSMISSION_PROBA, DEFAULT_DISTANCE
 from covid19sim.models.run import integrated_risk_pred
 from covid19sim.configs.exp_config import ExpConfig
+from covid19sim.configs.config import MASKS_SUPPLY
 
 class BehaviorInterventions(object):
     """
@@ -135,7 +136,7 @@ class Stand2M(BehaviorInterventions):
         """
         # FIXME : Social distancing also has this parameter
         human._maintain_extra_distance_2m = human.maintain_extra_distance
-        human.maintain_extra_distance = 100 # cms
+        human.maintain_extra_distance = 200 # cms
 
     def revert_behavior(self, human):
         """
@@ -175,7 +176,7 @@ class WashHands(BehaviorInterventions):
             human ([type]): [description]
         """
         human._hygiene = human.hygiene
-        human.hygiene = human.rng.uniform(human.carefulness, 1)
+        human.hygiene = human.rng.uniform(human.carefulness, 2)
 
     def revert_behavior(self, human):
         """
@@ -282,7 +283,7 @@ class SocialDistancing(BehaviorInterventions):
     """
     [summary]
     """
-    DEFAULT_SOCIAL_DISTANCE = 100 # cm
+    DEFAULT_SOCIAL_DISTANCE = 200 # cm
     TIME_ENCOUNTER_REDUCTION_FACTOR = 0.5
     _RHO = 0.2
     _GAMMA = 0.5
@@ -321,6 +322,44 @@ class SocialDistancing(BehaviorInterventions):
         [summary]
         """
         return f"Social Distancing"
+
+class BinaryTracing(BehaviorInterventions):
+    """
+    [summary]
+    """
+    def __init__(self):
+        """
+        [summary]
+        """
+        super(BinaryTracing, self).__init__()
+
+    def modify_behavior(self, human):
+        """
+        [summary]
+        Args:
+            human ([type]): [description]
+        """
+        if human.rec_level == 0:
+            recommendations = [WashHands()]
+        else:
+            recommendations = [WashHands(), Quarantine()]
+        self.revert_behavior(human)
+        for rec in recommendations:
+            if isinstance(rec, BehaviorInterventions) and human.rng.rand() < human.how_much_I_follow_recommendations:
+                rec.modify_behavior(human)
+                human.recommendations_to_follow.add(rec)
+
+    def revert_behavior(self, human):
+        """
+        [summary]
+        Args:
+            human ([type]): [description]
+        """
+        # print(f"chaging back {human}")
+        for rec in human.recommendations_to_follow:
+            rec.revert_behavior(human)
+        human.recommendations_to_follow = OrderedSet()
+
 
 class WearMask(BehaviorInterventions):
     """
@@ -383,9 +422,9 @@ def get_recommendations(level):
     if level == 0:
         return [WashHands()]
     if level == 1:
-        return [WashHands(), WearMask()]
+        return [WashHands(), Stand2M(), WearMask()]
     if level == 2:
-        return [WashHands(), SocialDistancing(), Stand2M(), WearMask(), 'monitor_symptoms']
+        return [WashHands(), SocialDistancing(), WearMask(), 'monitor_symptoms']
 
     return [WashHands(), SocialDistancing(), WearMask(), 'monitor_symptoms', GetTested("recommendations"), Quarantine()]
 
@@ -734,3 +773,51 @@ class TestCapacity(CityInterventions):
             city ([type]): [description]
         """
         pass
+
+def get_intervention(key, RISK_MODEL=None, TRACING_ORDER=None, TRACE_SYMPTOMS=None, TRACE_RISK_UPDATE=None, SHOULD_MODIFY_BEHAVIOR=True):
+    """
+    [summary]
+
+    Args:
+        key ([type]): [description]
+        RISK_MODEL ([type], optional): [description]. Defaults to None.
+        TRACING_ORDER ([type], optional): [description]. Defaults to None.
+        TRACE_SYMPTOMS ([type], optional): [description]. Defaults to None.
+        TRACE_RISK_UPDATE ([type], optional): [description]. Defaults to None.
+        SHOULD_MODIFY_BEHAVIOR (bool, optional): [description]. Defaults to True.
+
+    Raises:
+        NotImplementedError: [description]
+
+    Returns:
+        [type]: [description]
+    """
+    if key == "Lockdown":
+        return Lockdown()
+    elif key == "WearMask":
+        return WearMask(MASKS_SUPPLY)
+    elif key == "SocialDistancing":
+        return SocialDistancing()
+    elif key == "Quarantine":
+        return Quarantine()
+    elif key == "Tracing":
+        # there's a global variable somewhere called 'Tracing'
+        import covid19sim.interventions
+        return covid19sim.interventions.Tracing(
+            RISK_MODEL,
+            TRACING_ORDER,
+            TRACE_SYMPTOMS,
+            TRACE_RISK_UPDATE,
+            SHOULD_MODIFY_BEHAVIOR,
+        )
+    elif key == "WashHands":
+        return WashHands()
+    elif key == "Stand2M":
+        return Stand2M()
+    elif key == "StayHome":
+        return StayHome()
+    elif key == "GetTested":
+        raise NotImplementedError
+    else:
+        raise
+
